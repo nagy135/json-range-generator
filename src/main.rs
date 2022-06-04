@@ -1,3 +1,6 @@
+use std::io::stdin;
+use std::io::{self, BufRead};
+
 use clap::Parser;
 
 use regex::Regex;
@@ -34,10 +37,13 @@ struct Replacement {
 fn main() {
     let args = Args::parse();
 
-    if args.input.is_none() {
-        panic!("No input provided");
-    }
-    let data = args.input.unwrap();
+    let data = match args.input {
+        None => {
+            let lines: Vec<_> = stdin().lock().lines().map(|e| e.unwrap()).collect();
+            lines.join("")
+        }
+        Some(input) => input,
+    };
 
     let mut input: Value = serde_json::from_str(&data).unwrap();
 
@@ -71,7 +77,6 @@ fn recurse_obj(input_obj: &mut Value) {
             let mat = re.find(key).expect(WRONG_RANGE_MESSAGE);
 
             let key_range_text = &key[mat.start() + 1..mat.end() - 1];
-            println!("key {}", key);
             let head = key[..mat.start()].to_string();
             let tail = key[mat.end()..].to_string();
 
