@@ -27,6 +27,8 @@ struct Replacement {
     to: i32,
     key: String,
     value: Value,
+    head: String,
+    tail: String,
 }
 
 fn main() {
@@ -63,11 +65,15 @@ fn recurse_obj(input_obj: &mut Value) {
             recurse_obj(value);
         }
 
-        if let Some("<") = key.get(..1) {
+        // TODO: rethink this
+        if key.contains("<") && key.contains(">") {
             let re = Regex::new(r"<\d+-\d+>").unwrap();
             let mat = re.find(key).expect(WRONG_RANGE_MESSAGE);
 
             let key_range_text = &key[mat.start() + 1..mat.end() - 1];
+            println!("key {}", key);
+            let head = key[..mat.start()].to_string();
+            let tail = key[mat.end()..].to_string();
 
             let mut pieces = key_range_text.split('-');
 
@@ -79,17 +85,25 @@ fn recurse_obj(input_obj: &mut Value) {
                 to: to.parse::<i32>().unwrap(),
                 key: key.clone(),
                 value: value.clone(),
+                head,
+                tail,
             });
         }
     }
     for replacement in replacements.iter() {
         obj.remove(&replacement.key);
     }
-    for replacement in replacements.iter() {
-        let from = replacement.from;
-        let to = replacement.to;
-        for i in from..to + 1 {
-            obj.insert(format!("{}", i), replacement.value.clone());
+    for Replacement {
+        from,
+        to,
+        value,
+        head,
+        tail,
+        ..
+    } in replacements.iter()
+    {
+        for i in from.clone()..to.clone() + 1 {
+            obj.insert(format!("{}{}{}", head, i, tail), value.clone());
         }
     }
 }
