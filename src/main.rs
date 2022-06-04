@@ -8,11 +8,18 @@ extern crate serde_json;
 
 extern crate serde_derive;
 
+struct Replacement {
+    from: i32,
+    to: i32,
+    key: String,
+    value: Value,
+}
+
 fn main() {
     let data = r#"
         {
-            "<1-3>": "test",
-            "<4-6>": {
+            "<1-2>": "test",
+            "<4-7>": {
                 "<1-2>": "lol"
             },
             "haha": 1
@@ -25,11 +32,13 @@ fn main() {
     }
 
     recurse_obj(&mut input);
+    println!("{}", input);
 }
 
 fn recurse_obj(input_obj: &mut Value) {
     let obj = input_obj.as_object_mut().unwrap();
-    let mut inserts: Vec<[i32; 2]> = Vec::new();
+    // TODO: store also value so that it can be cloned
+    let mut replacements: Vec<Replacement> = Vec::new();
     for pair in obj.iter() {
         let key = pair.0;
         let value = pair.1;
@@ -45,10 +54,22 @@ fn recurse_obj(input_obj: &mut Value) {
                 .get(2)
                 .map_or(1, |m| m.as_str().parse::<i32>().unwrap());
 
-            inserts.push([from, to]);
+            replacements.push(Replacement {
+                from,
+                to,
+                key: key.clone(),
+                value: value.clone(),
+            });
         }
     }
-    println!("{:?}", inserts);
+    for replacement in replacements.iter() {
+        let from = replacement.from;
+        let to = replacement.to;
+        for i in from..to + 1 {
+            obj.insert(format!("{}", i), replacement.value.clone());
+        }
+        obj.remove(&replacement.key);
+    }
 }
 
 #[cfg(test)]
