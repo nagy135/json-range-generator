@@ -64,19 +64,19 @@ fn recurse_obj(input_obj: &mut Value) {
         }
 
         if let Some("<") = key.get(..1) {
-            let re = Regex::new(r"^<(\d+)-(\d+)>$").unwrap();
-            let nums = re.captures(key).expect(WRONG_RANGE_MESSAGE);
+            let re = Regex::new(r"<\d+-\d+>").unwrap();
+            let mat = re.find(key).expect(WRONG_RANGE_MESSAGE);
 
-            let from = nums
-                .get(1)
-                .map_or(1, |m| m.as_str().parse::<i32>().expect(WRONG_RANGE_MESSAGE));
-            let to = nums
-                .get(2)
-                .map_or(1, |m| m.as_str().parse::<i32>().expect(WRONG_RANGE_MESSAGE));
+            let key_range_text = &key[mat.start() + 1..mat.end() - 1];
+
+            let mut pieces = key_range_text.split('-');
+
+            let from = pieces.next().unwrap();
+            let to = pieces.next().unwrap();
 
             replacements.push(Replacement {
-                from,
-                to,
+                from: from.parse::<i32>().unwrap(),
+                to: to.parse::<i32>().unwrap(),
                 key: key.clone(),
                 value: value.clone(),
             });
