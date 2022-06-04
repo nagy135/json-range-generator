@@ -1,5 +1,5 @@
 use regex::Regex;
-use serde_json::Value;
+use serde_json::{to_string_pretty, Value};
 
 extern crate serde;
 extern crate serde_json;
@@ -32,16 +32,20 @@ fn main() {
     }
 
     recurse_obj(&mut input);
-    println!("{}", input);
+    println!("{}", to_string_pretty(&input).unwrap());
 }
 
 fn recurse_obj(input_obj: &mut Value) {
     let obj = input_obj.as_object_mut().unwrap();
     // TODO: store also value so that it can be cloned
     let mut replacements: Vec<Replacement> = Vec::new();
-    for pair in obj.iter() {
+    for pair in obj.iter_mut() {
         let key = pair.0;
         let value = pair.1;
+
+        if value.is_object() {
+            recurse_obj(value);
+        }
 
         if let Some("<") = key.get(..1) {
             let re = Regex::new(r"^<(\d{1})-(\d{1})>$").unwrap();
