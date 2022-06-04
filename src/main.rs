@@ -1,3 +1,5 @@
+use clap::Parser;
+
 use regex::Regex;
 use serde_json::{to_string_pretty, Value};
 
@@ -8,6 +10,15 @@ extern crate serde_json;
 
 extern crate serde_derive;
 
+/// Simple program to greet a person
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// Name of the person to greet
+    #[clap(short, long)]
+    pretty: bool,
+}
+
 struct Replacement {
     from: i32,
     to: i32,
@@ -16,6 +27,8 @@ struct Replacement {
 }
 
 fn main() {
+    let args = Args::parse();
+
     let data = r#"
         {
             "<1-2>": "test",
@@ -32,7 +45,12 @@ fn main() {
     }
 
     recurse_obj(&mut input);
-    println!("{}", to_string_pretty(&input).unwrap());
+
+    if args.pretty {
+        println!("{}", to_string_pretty(&input).unwrap());
+    } else {
+        println!("{}", &input);
+    }
 }
 
 fn recurse_obj(input_obj: &mut Value) {
