@@ -54,7 +54,6 @@ fn main() {
 
 fn recurse_obj(input_obj: &mut Value) {
     let obj = input_obj.as_object_mut().unwrap();
-    // TODO: store also value so that it can be cloned
     let mut replacements: Vec<Replacement> = Vec::new();
     for pair in obj.iter_mut() {
         let key = pair.0;
@@ -84,14 +83,15 @@ fn recurse_obj(input_obj: &mut Value) {
         }
     }
     for replacement in replacements.iter() {
+        obj.remove(&replacement.key);
+    }
+    for replacement in replacements.iter() {
         let from = replacement.from;
         let to = replacement.to;
         for i in from..to + 1 {
             obj.insert(format!("{}", i), replacement.value.clone());
         }
-        obj.remove(&replacement.key);
     }
 }
 
-#[cfg(test)]
 mod test;

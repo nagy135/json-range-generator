@@ -1,5 +1,6 @@
-use serde_json::{json, json_internal};
+use serde_json::json;
 
+#[cfg(test)]
 use super::*;
 
 #[test]
