@@ -32,3 +32,15 @@ Produces:
     }
 }
 ```
+
+## Usage
+
+either provide argument like
+```sh
+$ json-range-generator '{"<1-2>": 1}'
+```
+
+or pipe it in stdin
+```sh
+$ echo '{"<1-2>": 1}' | json-range-generator
+```
