@@ -10,11 +10,14 @@ extern crate serde_json;
 
 extern crate serde_derive;
 
+const WRONG_RANGE_MESSAGE: &'static str = "use format <x-y>";
+
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    /// Name of the person to greet
+    input: Option<String>,
+
     #[clap(short, long)]
     pretty: bool,
 }
@@ -29,16 +32,12 @@ struct Replacement {
 fn main() {
     let args = Args::parse();
 
-    let data = r#"
-        {
-            "<1-2>": "test",
-            "<4-7>": {
-                "<1-2>": "lol"
-            },
-            "haha": 1
-        }"#;
+    if args.input.is_none() {
+        panic!("No input provided");
+    }
+    let data = args.input.unwrap();
 
-    let mut input: Value = serde_json::from_str(data).unwrap();
+    let mut input: Value = serde_json::from_str(&data).unwrap();
 
     if !input.is_object() {
         panic!("only obj supported");
@@ -66,15 +65,15 @@ fn recurse_obj(input_obj: &mut Value) {
         }
 
         if let Some("<") = key.get(..1) {
-            let re = Regex::new(r"^<(\d{1})-(\d{1})>$").unwrap();
-            let nums = re.captures(key).expect("need format <x-y>");
+            let re = Regex::new(r"^<(\d+)-(\d+)>$").unwrap();
+            let nums = re.captures(key).expect(WRONG_RANGE_MESSAGE);
 
             let from = nums
                 .get(1)
-                .map_or(1, |m| m.as_str().parse::<i32>().unwrap());
+                .map_or(1, |m| m.as_str().parse::<i32>().expect(WRONG_RANGE_MESSAGE));
             let to = nums
                 .get(2)
-                .map_or(1, |m| m.as_str().parse::<i32>().unwrap());
+                .map_or(1, |m| m.as_str().parse::<i32>().expect(WRONG_RANGE_MESSAGE));
 
             replacements.push(Replacement {
                 from,
