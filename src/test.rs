@@ -1,5 +1,3 @@
-use serde_json::json;
-
 #[cfg(test)]
 use super::*;
 
@@ -21,7 +19,7 @@ fn basic() {
 
     recurse_obj(&mut v);
 
-    let desired = json!(
+    let desired = serde_json::json!(
         {
             "2": {
                 "name": "John Doe",
@@ -58,7 +56,7 @@ fn prefix_suffix() {
 
     recurse_obj(&mut v);
 
-    let desired = json!(
+    let desired = serde_json::json!(
         {
             "before_2_after": {
                 "name#88": "John Doe",

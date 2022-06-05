@@ -1,5 +1,5 @@
 use std::io::stdin;
-use std::io::{self, BufRead};
+use std::io::BufRead;
 
 use clap::Parser;
 
@@ -7,15 +7,12 @@ use regex::Regex;
 use serde_json::{to_string_pretty, Value};
 
 extern crate serde;
+extern crate serde_derive;
 extern crate serde_json;
 
-// Import this crate to derive the Serialize and Deserialize traits.
+mod test;
 
-extern crate serde_derive;
-
-const WRONG_RANGE_MESSAGE: &'static str = "use format <x-y>";
-
-/// Simple program to greet a person
+/// Generates json from ranges in json keys
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
@@ -39,7 +36,7 @@ fn main() {
 
     let data = match args.input {
         None => {
-            let lines: Vec<_> = stdin().lock().lines().map(|e| e.unwrap()).collect();
+            let lines: Vec<String> = stdin().lock().lines().map(|e| e.unwrap()).collect();
             lines.join("")
         }
         Some(input) => input,
@@ -60,9 +57,12 @@ fn main() {
     }
 }
 
+/// recursively mutates object, depth first
 fn recurse_obj(input_obj: &mut Value) {
     let obj = input_obj.as_object_mut().unwrap();
     let mut replacements: Vec<Replacement> = Vec::new();
+    let re = Regex::new(r"<\d+-\d+>").unwrap();
+
     for pair in obj.iter_mut() {
         let key = pair.0;
         let value = pair.1;
@@ -71,29 +71,28 @@ fn recurse_obj(input_obj: &mut Value) {
             recurse_obj(value);
         }
 
-        // TODO: rethink this
-        if key.contains("<") && key.contains(">") {
-            let re = Regex::new(r"<\d+-\d+>").unwrap();
-            let mat = re.find(key).expect(WRONG_RANGE_MESSAGE);
+        match re.find(key) {
+            Some(mat) => {
+                let key_range_text = &key[mat.start() + 1..mat.end() - 1];
+                let head = key[..mat.start()].to_string();
+                let tail = key[mat.end()..].to_string();
 
-            let key_range_text = &key[mat.start() + 1..mat.end() - 1];
-            let head = key[..mat.start()].to_string();
-            let tail = key[mat.end()..].to_string();
+                let mut pieces = key_range_text.split('-');
 
-            let mut pieces = key_range_text.split('-');
+                let from = pieces.next().unwrap().parse::<i32>().unwrap();
+                let to = pieces.next().unwrap().parse::<i32>().unwrap();
 
-            let from = pieces.next().unwrap();
-            let to = pieces.next().unwrap();
-
-            replacements.push(Replacement {
-                from: from.parse::<i32>().unwrap(),
-                to: to.parse::<i32>().unwrap(),
-                key: key.clone(),
-                value: value.clone(),
-                head,
-                tail,
-            });
-        }
+                replacements.push(Replacement {
+                    from,
+                    to,
+                    key: key.clone(),
+                    value: value.clone(),
+                    head,
+                    tail,
+                });
+            }
+            None => {}
+        };
     }
     for replacement in replacements.iter() {
         obj.remove(&replacement.key);
@@ -112,5 +111,3 @@ fn recurse_obj(input_obj: &mut Value) {
         }
     }
 }
-
-mod test;
